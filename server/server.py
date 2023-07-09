@@ -2,6 +2,8 @@ import socket
 import json
 import struct
 
+TEST_TANSFER_LOC = "/home/mage/Documents/send_any/test_transfer_check"
+
 def receive_response(sock):
     """!
     The function receives the response from the server and returns it.
@@ -13,8 +15,18 @@ def receive_response(sock):
     while reamining_payload_size != 0:
         received_payload += sock.recv(reamining_payload_size)
         reamining_payload_size = data_size - len(received_payload)
-    resp = json.loads(received_payload)
-    return resp
+    return received_payload
+
+def write_to_file(filename, data, is_new=False):
+    """
+    The function writes the bytes to the file.
+    filename (str): the name of the file to be written to.
+    data (bytes): the data to be written to the file.
+    is_new (bool): if True, the file will be overwritten.
+    """
+    mode = "ab" if not is_new else "wb"
+    with open(TEST_TANSFER_LOC + "/" + filename, mode) as f:
+        f.write(data)
 
 def __main__():
     """!
@@ -29,12 +41,14 @@ def __main__():
     while True:
         print(f"Running on {port}")
         connection, address = sock.accept()
+        file_name = receive_response(connection).decode("utf-8")
         data = receive_response(connection)
-        message = json.dumps(data)
+        write_to_file(file_name, data, is_new=True)
+        message = b'File received successfully!'
         # first send the length of the message
         connection.send(struct.pack('>I', len(message)))
         # then send the message
-        connection.send(bytes(message, encoding="utf-8"))
+        connection.send(message)
         connection.close()
 
 
